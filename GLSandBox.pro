@@ -15,3 +15,7 @@ SOURCES += main.cpp\
         glsandbox.cpp
 
 HEADERS  += glsandbox.h
+
+DISTFILES += \
+    shader2d.vert \
+    shader2d.frag

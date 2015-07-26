@@ -29,6 +29,10 @@ GLSandBox::GLSandBox(QWidget *parent)
     triangleCoords2D[1]=(QVector2D(-0.25f, -0.25f));
     triangleCoords2D[2]=(QVector2D(0.25f, -0.25f));
 
+    colors[0]=QVector4D(1.0f,0,0,1.0f);
+    colors[1]=QVector4D(0,1.0f,0,1.0f);
+    colors[2]=QVector4D(0,0,1.0f,1.0f);
+
     timer = new QTimer;
     connect(timer,SIGNAL(timeout()),this,SLOT(changeColor()));
 }
@@ -58,22 +62,47 @@ void GLSandBox::cleanup()
 
 void GLSandBox::initializeGL()
 {
+
+    QByteArray vShaderSource;
+    QString fShaderSource;
+    QFile vShader(vPath);
+    QFile fShader(fPath);
+    if(vShader.open(QIODevice::ReadOnly))
+    {
+        vShaderSource.append(vShader.readAll());
+        vShader.close();
+    }
+    else
+    {
+        qDebug() << "Vertex file not found";
+        exit(0);
+    }
+    if(fShader.open(QIODevice::ReadOnly))
+    {
+        fShaderSource.append(fShader.readAll());
+        fShader.close();
+    }
+    else
+    {
+        qDebug() << "Fragment file not found";
+        exit(0);
+    }
+
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLSandBox::cleanup);
 
     initializeOpenGLFunctions();
 
     // Blue background
-    glClearColor(0.1f, 0.0f, 0.0f, 1.0f );
+    glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
     m_program = new QOpenGLShaderProgram;
-    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex,vertex2DShader);
-    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment,frag2DShader);
-    m_program->link();
+    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex,vShaderSource);
+    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment,fShaderSource);
     m_program->bind();
+    m_program->link();
 
     vertexLocation = m_program->attributeLocation("coord2d");
+    vColorLocation = m_program->attributeLocation("vColor");
     matrixLocation = m_program->uniformLocation("matrix");
-    colorLocation = m_program->uniformLocation("color");
-    vColorLocation = m_program->uniformLocation("vColor");
 }
 
 void GLSandBox::paintGL()
@@ -81,16 +110,16 @@ void GLSandBox::paintGL()
     // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    QColor color(0, 50, 200, 255);
+    //QColor color(0, 50, 200, 255);
 
     QMatrix4x4 pmvMatrix;
     pmvMatrix.ortho(rect());
 
     m_program->enableAttributeArray(vertexLocation);
+    m_program->enableAttributeArray(vColorLocation);
     m_program->setAttributeArray(vertexLocation, triangleCoords2D);
+    m_program->setAttributeArray(vColorLocation, colors);
     m_program->setUniformValue(matrixLocation, pmvMatrix);
-    m_program->setUniformValue(vColorLocation, color);
-    m_program->setUniformValue(colorLocation, color);
 
     glLineWidth(2.5f);
     glPointSize(5);
@@ -107,6 +136,7 @@ void GLSandBox::paintGL()
 //    glDisable(GL_BLEND);
 
     m_program->disableAttributeArray(vertexLocation);
+    m_program->disableAttributeArray(vColorLocation);
 }
 
 void GLSandBox::resizeGL(int w, int h)
