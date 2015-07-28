@@ -104,7 +104,11 @@ void GLSandBox::initializeGL()
 
     // Our camera never changes in this example.
     m_camera.setToIdentity();
-    m_camera.translate(0, 0, -3);
+//    qDebug() << m_camera;
+    m_camera.translate(0, 0, 0);
+//    qDebug() << m_camera;
+
+        m_world.setToIdentity();
 }
 
 void GLSandBox::paintGL()
@@ -118,7 +122,9 @@ void GLSandBox::paintGL()
 //    pmvMatrix.ortho(rect());
 //    qDebug() << "model view Matrix: " << pmvMatrix;
 
-    m_world.setToIdentity();
+
+    m_world.rotate(1.0f,1.0f,0.0f,0.0f);
+//    qDebug() << m_world;
 
     shaderProgram->enableAttributeArray(vertexLocation);
     shaderProgram->enableAttributeArray(vColorLocation);
@@ -133,9 +139,9 @@ void GLSandBox::paintGL()
 
     glLineWidth(2.5f);
     glPointSize(5);
-//    glDrawArrays(GL_POINTS,0,3);
+    glDrawArrays(GL_POINTS,0,3);
 //    glDrawArrays(GL_LINE_LOOP, 0, 3);
-    glDrawArrays(GL_TRIANGLES,0,3);
+//    glDrawArrays(GL_TRIANGLES,0,3);
 
 //    glEnable(GL_BLEND);
 //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -151,8 +157,14 @@ void GLSandBox::paintGL()
 
 void GLSandBox::resizeGL(int w, int h)
 {
+    qDebug() << "w: " << w << ", h: " << h;
       m_proj.setToIdentity();
-       m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+//      m_proj.ortho(rect());
+//      m_proj.ortho(0,w,0,h,0.01f,100.0f);
+//      qDebug() << m_proj;
+//      m_proj.ortho(-100,200,-100,200,0.01f,100.0f);
+//       m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+//       qDebug() << m_proj;
 }
 
 void GLSandBox::changeColor()
