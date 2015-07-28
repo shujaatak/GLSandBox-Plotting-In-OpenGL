@@ -48,7 +48,7 @@ protected:
 
 private:
     bool m_core;
-    QOpenGLShaderProgram *m_program;
+    QOpenGLShaderProgram *shaderProgram;
     QMatrix4x4 m_proj;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
@@ -56,12 +56,14 @@ private:
 
     int vertexLocation;
     int matrixLocation;
+    int projMatrixLoc;
+    int mvMatrixLoc;
     int colorLocation;
     int vColorLocation;
 
     int m_blue;
-    QList<QVector2D> triangleCoords;
     QVector2D triangleCoords2D[3];
+    QVector2D triangleRawCoords2D[3];
     QVector4D colors[3];
 
     QTimer *timer;

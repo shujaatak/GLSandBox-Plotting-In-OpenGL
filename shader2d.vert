@@ -3,12 +3,15 @@
 in vec2 coord2d;
 in vec4 vColor;
 out vec4 vVaryingColor;
-uniform highp mat4 matrix;
+//uniform highp mat4 matrix;
+uniform mat4 projMatrix;
+uniform mat4 mvMatrix;
+//uniform mat3 normalMatrix;
 void main(void)
 {
-    //"   gl_Position = matrix * vec4(coord2d,0.0,1.0);
  vVaryingColor = vColor;
-gl_Position = vec4(coord2d,0.0,1.0);
+// gl_Position = vec4(coord2d,0.0,1.0);
+ gl_Position = projMatrix * mvMatrix * vec4(coord2d,0.5f,1.0);
 }
 
 /*

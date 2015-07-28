@@ -4,7 +4,7 @@
 
 GLSandBox::GLSandBox(QWidget *parent)
     : QOpenGLWidget(parent),
-      m_program(0)
+      shaderProgram(0)
 {
     m_core = QCoreApplication::arguments().contains(QStringLiteral("--coreprofile"));
 
@@ -14,21 +14,17 @@ GLSandBox::GLSandBox(QWidget *parent)
 
     m_blue = 200;
 
-    triangleCoords.append(QVector2D(60.0f,  10.0f));
-    triangleCoords.append(QVector2D(110.0f, 110.0f));
-    triangleCoords.append(QVector2D(10.0f,  110.0f));
-
-
     // Transformed geometry
-//    triangleCoords2D[0]=(QVector2D(10.0f, 10.0f));
-//    triangleCoords2D[1]=(QVector2D(10.0f, 60.0f));
-//    triangleCoords2D[2]=(QVector2D(60.0f, 10.0f));
+    triangleCoords2D[0]=(QVector2D(200.0f, 50.0f));
+    triangleCoords2D[1]=(QVector2D(100.0f, 200.0f));
+    triangleCoords2D[2]=(QVector2D(300.0f, 200.0f));
 
     // Non-transformed geometry
-    triangleCoords2D[0]=(QVector2D(0.0f, 0.0f));
-    triangleCoords2D[1]=(QVector2D(-0.25f, -0.25f));
-    triangleCoords2D[2]=(QVector2D(0.25f, -0.25f));
+    triangleRawCoords2D[0]=(QVector2D(0.0f, 0.0f));
+    triangleRawCoords2D[1]=(QVector2D(-0.25f, -0.5f));
+    triangleRawCoords2D[2]=(QVector2D(0.25f, -0.5f));
 
+    // Color array
     colors[0]=QVector4D(1.0f,0,0,1.0f);
     colors[1]=QVector4D(0,1.0f,0,1.0f);
     colors[2]=QVector4D(0,0,1.0f,1.0f);
@@ -55,8 +51,8 @@ QSize GLSandBox::sizeHint() const
 void GLSandBox::cleanup()
 {
     makeCurrent();
-    delete m_program;
-    m_program = 0;
+    delete shaderProgram;
+    shaderProgram = 0;
     doneCurrent();
 }
 
@@ -94,15 +90,21 @@ void GLSandBox::initializeGL()
 
     // Blue background
     glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
-    m_program = new QOpenGLShaderProgram;
-    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex,vShaderSource);
-    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment,fShaderSource);
-    m_program->bind();
-    m_program->link();
+    shaderProgram = new QOpenGLShaderProgram;
+    shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex,vShaderSource);
+    shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment,fShaderSource);
+    shaderProgram->bind();
+    shaderProgram->link();
 
-    vertexLocation = m_program->attributeLocation("coord2d");
-    vColorLocation = m_program->attributeLocation("vColor");
-    matrixLocation = m_program->uniformLocation("matrix");
+    vertexLocation = shaderProgram->attributeLocation("coord2d");
+    vColorLocation = shaderProgram->attributeLocation("vColor");
+    projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
+    mvMatrixLoc = shaderProgram->uniformLocation("mvMatrix");
+//    matrixLocation = shaderProgram->uniformLocation("matrix");
+
+    // Our camera never changes in this example.
+    m_camera.setToIdentity();
+    m_camera.translate(0, 0, -3);
 }
 
 void GLSandBox::paintGL()
@@ -112,14 +114,22 @@ void GLSandBox::paintGL()
 
     //QColor color(0, 50, 200, 255);
 
-    QMatrix4x4 pmvMatrix;
-    pmvMatrix.ortho(rect());
+//    QMatrix4x4 pmvMatrix;
+//    pmvMatrix.ortho(rect());
+//    qDebug() << "model view Matrix: " << pmvMatrix;
 
-    m_program->enableAttributeArray(vertexLocation);
-    m_program->enableAttributeArray(vColorLocation);
-    m_program->setAttributeArray(vertexLocation, triangleCoords2D);
-    m_program->setAttributeArray(vColorLocation, colors);
-    m_program->setUniformValue(matrixLocation, pmvMatrix);
+    m_world.setToIdentity();
+
+    shaderProgram->enableAttributeArray(vertexLocation);
+    shaderProgram->enableAttributeArray(vColorLocation);
+//    shaderProgram->setAttributeArray(vertexLocation, triangleCoords2D);
+    shaderProgram->setAttributeArray(vertexLocation, triangleRawCoords2D);
+    shaderProgram->setAttributeArray(vColorLocation, colors);
+//    shaderProgram->setUniformValue(matrixLocation, pmvMatrix);
+
+    shaderProgram->setUniformValue(projMatrixLoc, m_proj);
+    shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
+
 
     glLineWidth(2.5f);
     glPointSize(5);
@@ -129,21 +139,20 @@ void GLSandBox::paintGL()
 
 //    glEnable(GL_BLEND);
 //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    m_program->setAttributeArray(vertexLocation, squareVertices,3);
+//    shaderProgram->setAttributeArray(vertexLocation, squareVertices,3);
 //    color = QColor(50,100,0,100);
-//    m_program->setUniformValue(colorLocation, color);
+//    shaderProgram->setUniformValue(colorLocation, color);
 //    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 //    glDisable(GL_BLEND);
 
-    m_program->disableAttributeArray(vertexLocation);
-    m_program->disableAttributeArray(vColorLocation);
+    shaderProgram->disableAttributeArray(vertexLocation);
+    shaderProgram->disableAttributeArray(vColorLocation);
 }
 
 void GLSandBox::resizeGL(int w, int h)
 {
-    //    glViewport(0,0,w,h);
-    //    m_proj.setToIdentity();
-    //    m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+      m_proj.setToIdentity();
+       m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
 }
 
 void GLSandBox::changeColor()
