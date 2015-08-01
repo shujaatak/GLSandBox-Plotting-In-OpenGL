@@ -1,4 +1,3 @@
-// 2D Shader
 #version 330
 in vec2 coord2d;
 in vec4 vColor;
@@ -11,6 +10,7 @@ void main(void)
 {
  vVaryingColor = vColor;
 // gl_Position = vec4(coord2d,0.0,1.0);
+// gl_Position = projMatrix * mvMatrix * vec4(coord2d,0.5f,1.0);
  gl_Position = projMatrix * mvMatrix * vec4(coord2d,0.5f,1.0);
 }
 
