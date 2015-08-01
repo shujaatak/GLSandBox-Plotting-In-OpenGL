@@ -88,8 +88,21 @@ void GLSandBox::initializeGL()
 
     initializeOpenGLFunctions();
 
+    // Vertex buffer object:
+    m_vao.create();
+    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
+    // Setup our vertex buffer object.
+    m_logoVbo.create();
+    m_logoVbo.bind();
+    m_logoVbo.allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
+
+    vbo = new QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+    vbo->create();
+    vbo->allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
+
+
     // Blue background
-    glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
     shaderProgram = new QOpenGLShaderProgram;
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex,vShaderSource);
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment,fShaderSource);
@@ -100,11 +113,13 @@ void GLSandBox::initializeGL()
     vColorLocation = shaderProgram->attributeLocation("vColor");
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
     mvMatrixLoc = shaderProgram->uniformLocation("mvMatrix");
-//    matrixLocation = shaderProgram->uniformLocation("matrix");
+    //    matrixLocation = shaderProgram->uniformLocation("matrix");
 
     // Our camera never changes in this example.
     m_camera.setToIdentity();
-    m_camera.translate(0, 0, -3);
+    m_camera.translate(0, 0, -5);
+    m_world.setToIdentity();
+    timer->start(25);
 }
 
 void GLSandBox::paintGL()
@@ -114,36 +129,40 @@ void GLSandBox::paintGL()
 
     //QColor color(0, 50, 200, 255);
 
-//    QMatrix4x4 pmvMatrix;
-//    pmvMatrix.ortho(rect());
-//    qDebug() << "model view Matrix: " << pmvMatrix;
+    //    QMatrix4x4 pmvMatrix;
+    //    pmvMatrix.ortho(rect());
+    //    qDebug() << "model view Matrix: " << pmvMatrix;
 
-    m_world.setToIdentity();
+    //    m_world.setToIdentity();
+    //    m_world.rotate(5,1.0f,0.0f,0.0f);
 
     shaderProgram->enableAttributeArray(vertexLocation);
     shaderProgram->enableAttributeArray(vColorLocation);
-//    shaderProgram->setAttributeArray(vertexLocation, triangleCoords2D);
+    //    shaderProgram->setAttributeArray(vertexLocation, triangleCoords2D);
     shaderProgram->setAttributeArray(vertexLocation, triangleRawCoords2D);
     shaderProgram->setAttributeArray(vColorLocation, colors);
-//    shaderProgram->setUniformValue(matrixLocation, pmvMatrix);
+    //    shaderProgram->setUniformValue(matrixLocation, pmvMatrix);
 
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
+    //    qDebug() << "Projection matrix:" << m_proj;
+    //    qDebug() << "Modelview matrix:" << m_camera*m_world;
+
 
     glLineWidth(2.5f);
-    glPointSize(5);
-//    glDrawArrays(GL_POINTS,0,3);
-//    glDrawArrays(GL_LINE_LOOP, 0, 3);
-    glDrawArrays(GL_TRIANGLES,0,3);
+    glPointSize(8);
+    glDrawArrays(GL_POINTS,0,3);
+    glDrawArrays(GL_LINE_LOOP, 0, 3);
+    //    glDrawArrays(GL_TRIANGLES,0,3);
 
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    shaderProgram->setAttributeArray(vertexLocation, squareVertices,3);
-//    color = QColor(50,100,0,100);
-//    shaderProgram->setUniformValue(colorLocation, color);
-//    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-//    glDisable(GL_BLEND);
+    //    glEnable(GL_BLEND);
+    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //    shaderProgram->setAttributeArray(vertexLocation, squareVertices,3);
+    //    color = QColor(50,100,0,100);
+    //    shaderProgram->setUniformValue(colorLocation, color);
+    //    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    //    glDisable(GL_BLEND);
 
     shaderProgram->disableAttributeArray(vertexLocation);
     shaderProgram->disableAttributeArray(vColorLocation);
@@ -151,10 +170,22 @@ void GLSandBox::paintGL()
 
 void GLSandBox::resizeGL(int w, int h)
 {
-      m_proj.setToIdentity();
-       m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+    m_proj.setToIdentity();
+    m_proj.perspective(30.0f, GLfloat(w) / h, 0.01f, 100.0f);
+    //        qDebug() << "Pers projection:" << m_proj;
+
+    QMatrix4x4 tempmat;
+    tempmat.setToIdentity();
+    tempmat.ortho(0,2,0,2,0.01f,200.0f);
+    tempmat.translate(1,1,1);
+
+    //       qDebug() << "Ortho projection:" << tempmat;
+    m_proj = tempmat;
 }
 
 void GLSandBox::changeColor()
 {
+    m_world.rotate(1,1,0.5,0);
+    m_camera.rotate(0.5,0,0,1);
+    update();
 }

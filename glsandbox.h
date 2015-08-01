@@ -61,6 +61,9 @@ private:
     int colorLocation;
     int vColorLocation;
 
+    QOpenGLVertexArrayObject m_vao;
+    QOpenGLBuffer *vbo;
+
     int m_blue;
     QVector2D triangleCoords2D[3];
     QVector2D triangleRawCoords2D[3];
