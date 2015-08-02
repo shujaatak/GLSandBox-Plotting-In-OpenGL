@@ -23,6 +23,18 @@ static GLfloat const squareVertices[] = {
     80.0f,  10.0f,  0.0f,
 };
 
+static GLfloat const rawVertices[] = {
+    200.0f, 50.0f,
+    100.0f, 200.0f,
+    300.0f, 200.0f
+};
+
+static GLfloat const rawVertices3D[] = {
+    200.0f, 50.0f, 0.0f,
+    100.0f, 200.0f, 0.0f,
+    300.0f, 200.0f, 0.0f
+};
+
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
 class GLSandBox : public QOpenGLWidget, protected QOpenGLFunctions
@@ -47,6 +59,7 @@ protected:
     void resizeGL(int width, int height) Q_DECL_OVERRIDE;
 
 private:
+    void setupVertexAttribs();
     bool m_core;
     QOpenGLShaderProgram *shaderProgram;
     QMatrix4x4 m_proj;
@@ -61,6 +74,7 @@ private:
     int colorLocation;
     int vColorLocation;
 
+    GLuint vertexbuffer;
     QOpenGLVertexArrayObject m_vao;
     QOpenGLBuffer *vbo;
 
