@@ -17,6 +17,18 @@
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
 
+static const GLfloat rawVerts[] = {
+    0.0f,0.0f,0.0f,
+    -0.25f,-0.25f,0.0f,
+    0.25f,-0.25f,0.0f
+};
+
+static const GLfloat colorVerts[] = {
+    1.0f,0.0f,0.0f,1.0f,
+    0.0f,1.0f,0.0f,1.0f,
+    0.0f,0.0f,1.0f,1.0f
+};
+
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
 class GLSandBox : public QOpenGLWidget, protected QOpenGLFunctions
@@ -43,6 +55,10 @@ protected:
 private:
     bool m_core;
     QOpenGLShaderProgram *shaderProgram;
+    QOpenGLVertexArrayObject *vao;
+    QOpenGLBuffer *vbo;
+    QOpenGLBuffer *vbo2;
+
     QMatrix4x4 m_proj;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;

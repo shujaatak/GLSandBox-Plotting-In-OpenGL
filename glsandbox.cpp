@@ -52,7 +52,7 @@ QSize GLSandBox::sizeHint() const
 void GLSandBox::cleanup()
 {
     makeCurrent();
-//    vbo->destroy();
+    //    vbo->destroy();
     delete shaderProgram;
     shaderProgram = 0;
     doneCurrent();
@@ -89,6 +89,7 @@ void GLSandBox::initializeGL()
 
     initializeOpenGLFunctions();
 
+
     // Blue background
     glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
     shaderProgram = new QOpenGLShaderProgram;
@@ -97,7 +98,7 @@ void GLSandBox::initializeGL()
     shaderProgram->bind();
     shaderProgram->link();
 
-    vertexLocation = shaderProgram->attributeLocation("coord2d");
+    //    vertexLocation = shaderProgram->attributeLocation("coord2d");
     vColorLocation = shaderProgram->attributeLocation("vColor");
 
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
@@ -107,40 +108,50 @@ void GLSandBox::initializeGL()
     m_camera.translate(0, 0, -3);
     m_world.setToIdentity();
 
-        timer->start(20);
+    vao = new QOpenGLVertexArrayObject(this);
+    vao->create();
+    vao->bind();
 
-    //    qDebug() << m_camera;
-    //    m_camera.translate(0, 0, 0);
-    //    qDebug() << m_camera;
+    vbo = new QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+    vbo->create();
+    vbo->setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    vbo->bind();
+    vbo->allocate(rawVerts,sizeof(rawVerts));
 
-//    shaderProgram->release();
+    shaderProgram->enableAttributeArray("coord3d");
+    shaderProgram->setAttributeBuffer("coord3d",GL_FLOAT,0,3);
+
+    vbo2 = new QOpenGLBuffer;
+    vbo2->create();
+    vbo2->setUsagePattern(QOpenGLBuffer::StaticDraw);
+    vbo2->bind();
+    vbo2->allocate(colorVerts,sizeof(colorVerts));
+
+    shaderProgram->enableAttributeArray("vColor");
+    shaderProgram->setAttributeBuffer("vColor",GL_FLOAT,0,4);
+
+    shaderProgram->release();
+
+    timer->start(5);
 }
 
 void GLSandBox::paintGL()
 {
     // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-     shaderProgram->enableAttributeArray(vertexLocation);
-    shaderProgram->enableAttributeArray(vColorLocation);
-
-    shaderProgram->setAttributeArray(vertexLocation, triangleRawCoords2D);
-    shaderProgram->setAttributeArray(vColorLocation, colors);
-
+    shaderProgram->bind();
+    vao->bind();
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
     glLineWidth(2.5f);
     glPointSize(8);
     glDrawArrays(GL_POINTS,0,3);
-    glDrawArrays(GL_LINE_LOOP, 0, 3);
+    //    glDrawArrays(GL_LINE_LOOP, 0, 3);
+    glDrawArrays(GL_TRIANGLES,0,3);
 
-        shaderProgram->setAttributeArray(vColorLocation, colorWhite);
-        glDrawArrays(GL_TRIANGLES,0,3);
-
-    shaderProgram->disableAttributeArray(vertexLocation);
-    shaderProgram->disableAttributeArray(vColorLocation);
-//    shaderProgram->release();
+    vao->release();
+    shaderProgram->release();
 }
 
 void GLSandBox::resizeGL(int w, int h)
@@ -155,13 +166,13 @@ void GLSandBox::resizeGL(int w, int h)
     tempmat.translate(1,1,1);
 
     //       qDebug() << "Ortho projection:" << tempmat;
-    m_proj = tempmat;
+//    m_proj = tempmat;
     //    qDebug() << "w: " << w << ", h: " << h;
 }
 
 void GLSandBox::changeColor()
 {
-        m_world.rotate(2,0,1,0);
-//    m_camera.rotate(0.5,0,0,1);
+    m_world.rotate(2,0,1,0);
+    m_camera.rotate(5,1,0,0);
     update();
 }
