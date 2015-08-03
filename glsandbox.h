@@ -17,12 +17,6 @@
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
 
-static const GLfloat rawVerts[] = {
-    0.0f,0.0f,0.0f,
-    -0.25f,-0.25f,0.0f,
-    0.25f,-0.25f,0.0f
-};
-
 static const GLfloat colorVerts[] = {
     1.0f,0.0f,0.0f,1.0f,
     0.0f,1.0f,0.0f,1.0f,
@@ -64,6 +58,7 @@ private:
     QMatrix4x4 m_world;
     bool m_transparent;
 
+
     int vertexLocation;
     int matrixLocation;
     int projMatrixLoc;
@@ -76,7 +71,14 @@ private:
     QVector4D colors[3];
     QVector4D colorWhite[3];
 
+    GLfloat rawVerts[9];
+bool growing;
+    // = {
+//        0.0f,0.0f,0.0f,
+//        -0.25f,-0.25f,0.0f,
+//        0.25f,-0.25f,0.0f
+//    };
+
     QTimer *timer;
 };
-
 #endif // GLSANDBOX_H

@@ -13,6 +13,7 @@ GLSandBox::GLSandBox(QWidget *parent)
         setAttribute(Qt::WA_TranslucentBackground);
 
     m_blue = 200;
+    growing=true;
 
     // Non-transformed geometry
     triangleRawCoords2D[0]=(QVector2D(0.0f, 0.0f));
@@ -29,6 +30,15 @@ GLSandBox::GLSandBox(QWidget *parent)
     colorWhite[1]=QVector4D(0.5,0.5f,0.5f,1.0f);
     colorWhite[2]=QVector4D(0,0,0.0f,1.0f);
 
+    rawVerts[0] = 0.0f;
+    rawVerts[1] = 0.0f;
+    rawVerts[2] = 0.0f;
+    rawVerts[3] = -0.25f;
+    rawVerts[4] = -0.25f;
+    rawVerts[5] = 0.0f;
+    rawVerts[6] = 0.25f;
+    rawVerts[7] = -0.25f;
+    rawVerts[8] = 0.0f;
 
     timer = new QTimer;
     connect(timer,SIGNAL(timeout()),this,SLOT(changeColor()));
@@ -98,14 +108,14 @@ void GLSandBox::initializeGL()
     shaderProgram->bind();
     shaderProgram->link();
 
-    //    vertexLocation = shaderProgram->attributeLocation("coord2d");
+    //    vertexLocation = shaderProgram->att;ributeLocation("coord2d");
     vColorLocation = shaderProgram->attributeLocation("vColor");
 
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
     mvMatrixLoc = shaderProgram->uniformLocation("mvMatrix");
     // Our camera never changes in this example.
     m_camera.setToIdentity();
-    m_camera.translate(0, 0, -3);
+    m_camera.translate(0, 0, -5);
     m_world.setToIdentity();
 
     vao = new QOpenGLVertexArrayObject(this);
@@ -132,7 +142,7 @@ void GLSandBox::initializeGL()
 
     shaderProgram->release();
 
-    timer->start(5);
+    timer->start(25);
 }
 
 void GLSandBox::paintGL()
@@ -140,16 +150,25 @@ void GLSandBox::paintGL()
     // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     shaderProgram->bind();
+
     vao->bind();
+
+vbo->bind();
+     vbo->allocate(rawVerts,sizeof(rawVerts));
+     shaderProgram->enableAttributeArray("coord3d");
+     shaderProgram->setAttributeBuffer("coord3d",GL_FLOAT,0,3);
+
+
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
     glLineWidth(2.5f);
-    glPointSize(8);
-    glDrawArrays(GL_POINTS,0,3);
+    //    glPointSize(2.5f);
+    //    glDrawArrays(GL_POINTS,0,3);
     //    glDrawArrays(GL_LINE_LOOP, 0, 3);
     glDrawArrays(GL_TRIANGLES,0,3);
 
+    vbo->release();
     vao->release();
     shaderProgram->release();
 }
@@ -173,6 +192,19 @@ void GLSandBox::resizeGL(int w, int h)
 void GLSandBox::changeColor()
 {
     m_world.rotate(2,0,1,0);
-    m_camera.rotate(5,1,0,0);
+    //    m_camera.rotate(5,1,0,0);
+if(growing)
+{
+    rawVerts[1]+=0.01;
+    if(rawVerts[1]>=0.9)
+        growing=false;
+}
+else
+{
+
+    rawVerts[1]-=0.01;
+    if(rawVerts[1]<=0)
+        growing=true;
+}
     update();
 }
