@@ -14,6 +14,7 @@ GLSandBox::GLSandBox(QWidget *parent)
 
     m_blue = 200;
     growing=true;
+    inc_poly=true;
 
     // Non-transformed geometry
     triangleRawCoords2D[0]=(QVector2D(0.0f, 0.0f));
@@ -24,6 +25,7 @@ GLSandBox::GLSandBox(QWidget *parent)
     colors[0]=QVector4D(1.0f,0,0,1.0f);
     colors[1]=QVector4D(0,1.0f,0,1.0f);
     colors[2]=QVector4D(0,0,1.0f,1.0f);
+    colors[3]=QVector4D(1.0,1.0,1.0f,1.0f);
 
     // White color array
     colorWhite[0]=QVector4D(1.0f,1,1,1.0f);
@@ -32,13 +34,18 @@ GLSandBox::GLSandBox(QWidget *parent)
 
     rawVerts[0] = 0.0f;
     rawVerts[1] = 0.0f;
-    rawVerts[2] = 0.0f;
+    rawVerts[2] = -0.25f;
     rawVerts[3] = -0.25f;
-    rawVerts[4] = -0.25f;
-    rawVerts[5] = 0.0f;
-    rawVerts[6] = 0.25f;
-    rawVerts[7] = -0.25f;
-    rawVerts[8] = 0.0f;
+    rawVerts[4] = 0.25f;
+    rawVerts[5] = -0.25f;
+
+    //    polygonVerts = new QList<QVector2D>;
+    polygonVerts.append(QVector2D(-0.25,0.0));
+    polygonVerts.append(QVector2D(-0.25,-0.25));
+    polygonVerts.append(QVector2D(0.25,-0.25));
+    polygonVerts.append(QVector2D(0.25,0.0));
+    vertCount = 3;
+
 
     timer = new QTimer;
     connect(timer,SIGNAL(timeout()),this,SLOT(changeColor()));
@@ -62,7 +69,8 @@ QSize GLSandBox::sizeHint() const
 void GLSandBox::cleanup()
 {
     makeCurrent();
-    //    vbo->destroy();
+    vao->destroy();
+    vbo->destroy();
     delete shaderProgram;
     shaderProgram = 0;
     doneCurrent();
@@ -126,10 +134,10 @@ void GLSandBox::initializeGL()
     vbo->create();
     vbo->setUsagePattern(QOpenGLBuffer::DynamicDraw);
     vbo->bind();
-    vbo->allocate(rawVerts,sizeof(rawVerts));
+    vbo->allocate(verts,vertCount*2*sizeof(GLfloat));
 
-    shaderProgram->enableAttributeArray("coord3d");
-    shaderProgram->setAttributeBuffer("coord3d",GL_FLOAT,0,3);
+    shaderProgram->enableAttributeArray("coord2d");
+    shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
     vbo2 = new QOpenGLBuffer;
     vbo2->create();
@@ -150,23 +158,31 @@ void GLSandBox::paintGL()
     // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     shaderProgram->bind();
-
     vao->bind();
+    vbo->bind();
 
-vbo->bind();
-     vbo->allocate(rawVerts,sizeof(rawVerts));
-     shaderProgram->enableAttributeArray("coord3d");
-     shaderProgram->setAttributeBuffer("coord3d",GL_FLOAT,0,3);
+    //    quint8 vertsize = polygonVerts.size()*2;
+    quint8 vertSize = vertCount*2;
+    //    GLfloat verts[vertSize];
+    for(quint8 i=0;i<vertCount;i++)
+    {
+        verts[i*2]=polygonVerts.at(i).x();
+        verts[(i*2)+1]= polygonVerts.at(i).y();
+    }
 
+    vbo->allocate(verts,vertSize*sizeof(GLfloat));
+    shaderProgram->enableAttributeArray("coord2d");
+    shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
     glLineWidth(2.5f);
-    //    glPointSize(2.5f);
-    //    glDrawArrays(GL_POINTS,0,3);
+    glPointSize(4.5f);
+    //    glDrawArrays(GL_POINTS,0,vertCount);
     //    glDrawArrays(GL_LINE_LOOP, 0, 3);
-    glDrawArrays(GL_TRIANGLES,0,3);
+    //    glDrawArrays(GL_TRIANGLES,0,3);
+    glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
 
     vbo->release();
     vao->release();
@@ -183,28 +199,39 @@ void GLSandBox::resizeGL(int w, int h)
     tempmat.setToIdentity();
     tempmat.ortho(0,2,0,2,0.01f,200.0f);
     tempmat.translate(1,1,1);
-
     //       qDebug() << "Ortho projection:" << tempmat;
-//    m_proj = tempmat;
-    //    qDebug() << "w: " << w << ", h: " << h;
+    m_proj = tempmat;
 }
 
 void GLSandBox::changeColor()
 {
     m_world.rotate(2,0,1,0);
-    //    m_camera.rotate(5,1,0,0);
-if(growing)
-{
-    rawVerts[1]+=0.01;
-    if(rawVerts[1]>=0.9)
-        growing=false;
-}
-else
-{
+    m_camera.rotate(1,0,0,1);
+    if(growing)
+    {
+        polygonVerts.replace(0,QVector2D(polygonVerts.at(0).x(),
+                                         polygonVerts.at(0).y()+0.05f));
+        if(polygonVerts.at(0).y()>=0.9)
+            growing=false;
+    }
+    else
+    {
+        polygonVerts.replace(0,QVector2D(polygonVerts.at(0).x(),
+                                         polygonVerts.at(0).y()-0.05f));
+        if(polygonVerts.at(0).y()<=0)
+            growing=true;
+    }
 
-    rawVerts[1]-=0.01;
-    if(rawVerts[1]<=0)
-        growing=true;
-}
+    if(vertCount==3)
+    {
+        vertCount=4;
+        polygonVerts[0].setX(-0.25f);
+        polygonVerts[3].setY(polygonVerts[0].y());
+    }
+    else
+    {
+        vertCount=3;
+        polygonVerts[0].setX(0.0f);
+    }
     update();
 }

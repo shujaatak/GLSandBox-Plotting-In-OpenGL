@@ -10,6 +10,7 @@
 #include <QVector2D>
 #include <QVector4D>
 #include <QFile>
+#include <QList>
 #include <QOpenGLShaderProgram>
 
 #include <QTimer>
@@ -20,7 +21,8 @@ static const char *fPath = "../GLSandBox/shader2d.frag";
 static const GLfloat colorVerts[] = {
     1.0f,0.0f,0.0f,1.0f,
     0.0f,1.0f,0.0f,1.0f,
-    0.0f,0.0f,1.0f,1.0f
+    0.0f,0.0f,1.0f,1.0f,
+    1.0f,1.0f,1.0f,1.0f
 };
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
@@ -70,9 +72,13 @@ private:
     QVector2D triangleRawCoords2D[3];
     QVector4D colors[3];
     QVector4D colorWhite[3];
+    QList<QVector2D> polygonVerts;
 
-    GLfloat rawVerts[9];
+    GLfloat rawVerts[6];
 bool growing;
+bool inc_poly;
+GLfloat verts[1000];
+quint8 vertCount;
     // = {
 //        0.0f,0.0f,0.0f,
 //        -0.25f,-0.25f,0.0f,

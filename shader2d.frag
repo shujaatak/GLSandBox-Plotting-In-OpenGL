@@ -5,6 +5,7 @@ void main(void)
 {
 vFragColor = vVaryingColor;
  //gl_FragColor = color;
+//    vFragColor = vec4(1.0,1.0,1.0,1.0);
 }
 
 /*
