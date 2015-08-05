@@ -42,6 +42,7 @@ public:
 public slots:
     void cleanup();
     void changeColor();
+    void sineGenerator();
 
 protected:
     void initializeGL() Q_DECL_OVERRIDE;
@@ -74,11 +75,13 @@ private:
     QVector4D colorWhite[3];
     QList<QVector2D> polygonVerts;
 
+
     GLfloat rawVerts[6];
 bool growing;
 bool inc_poly;
-GLfloat verts[1000];
-quint8 vertCount;
+GLfloat verts[10000];
+quint16 vertCount;
+quint16 vertPointer;
     // = {
 //        0.0f,0.0f,0.0f,
 //        -0.25f,-0.25f,0.0f,
@@ -86,5 +89,9 @@ quint8 vertCount;
 //    };
 
     QTimer *timer;
+
+
+    double xval;
+
 };
 #endif // GLSANDBOX_H

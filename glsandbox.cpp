@@ -12,9 +12,18 @@ GLSandBox::GLSandBox(QWidget *parent)
     if (m_transparent)
         setAttribute(Qt::WA_TranslucentBackground);
 
+    // For anti-aliasing:
+    QSurfaceFormat sFormat;
+    sFormat.setSamples(8);
+    this->setFormat(sFormat);
+
+    // Control variables:
     m_blue = 200;
     growing=true;
     inc_poly=true;
+    xval = 0;
+    vertCount = 1000;
+    vertPointer=0;
 
     // Non-transformed geometry
     triangleRawCoords2D[0]=(QVector2D(0.0f, 0.0f));
@@ -39,16 +48,14 @@ GLSandBox::GLSandBox(QWidget *parent)
     rawVerts[4] = 0.25f;
     rawVerts[5] = -0.25f;
 
-    //    polygonVerts = new QList<QVector2D>;
-    polygonVerts.append(QVector2D(-0.25,0.0));
-    polygonVerts.append(QVector2D(-0.25,-0.25));
-    polygonVerts.append(QVector2D(0.25,-0.25));
-    polygonVerts.append(QVector2D(0.25,0.0));
-    vertCount = 3;
-
+    double scale = 2/(double(vertCount)-1);
+    for(quint16 i=0; i<vertCount; i++)
+    {
+        polygonVerts.append(QVector2D((scale*i-1),0.0f));
+    }
 
     timer = new QTimer;
-    connect(timer,SIGNAL(timeout()),this,SLOT(changeColor()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(sineGenerator()));
 }
 
 GLSandBox::~GLSandBox()
@@ -107,7 +114,6 @@ void GLSandBox::initializeGL()
 
     initializeOpenGLFunctions();
 
-
     // Blue background
     glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
     shaderProgram = new QOpenGLShaderProgram;
@@ -121,9 +127,9 @@ void GLSandBox::initializeGL()
 
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
     mvMatrixLoc = shaderProgram->uniformLocation("mvMatrix");
-    // Our camera never changes in this example.
+
     m_camera.setToIdentity();
-    m_camera.translate(0, 0, -5);
+    m_camera.translate(0, 0, -2);
     m_world.setToIdentity();
 
     vao = new QOpenGLVertexArrayObject(this);
@@ -157,16 +163,17 @@ void GLSandBox::paintGL()
 {
     // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glEnable(GL_MULTISAMPLE);
+
     shaderProgram->bind();
     vao->bind();
     vbo->bind();
 
-    //    quint8 vertsize = polygonVerts.size()*2;
-    quint8 vertSize = vertCount*2;
-    //    GLfloat verts[vertSize];
-    for(quint8 i=0;i<vertCount;i++)
+    quint16 vertSize = vertCount*2;
+    double scale = 2/(double(vertCount)-1);
+    for(quint16 i=0;i<vertCount;i++)
     {
-        verts[i*2]=polygonVerts.at(i).x();
+        verts[i*2]=(scale*i-1);
         verts[(i*2)+1]= polygonVerts.at(i).y();
     }
 
@@ -178,11 +185,15 @@ void GLSandBox::paintGL()
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
     glLineWidth(2.5f);
-    glPointSize(4.5f);
-    //    glDrawArrays(GL_POINTS,0,vertCount);
+    glPointSize(2.5f);
+
+    //            glDrawArrays(GL_POINTS,0,vertCount);
     //    glDrawArrays(GL_LINE_LOOP, 0, 3);
     //    glDrawArrays(GL_TRIANGLES,0,3);
-    glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
+    //        glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
+    //    glDrawArrays(GL_TRIANGLE_STRIP,0,vertCount);
+    glDrawArrays(GL_LINE_STRIP,0,vertCount);
+    //        glDrawArrays(GL_POINTS,vertCount-1,1);
 
     vbo->release();
     vao->release();
@@ -205,8 +216,8 @@ void GLSandBox::resizeGL(int w, int h)
 
 void GLSandBox::changeColor()
 {
-    m_world.rotate(2,0,1,0);
-    m_camera.rotate(1,0,0,1);
+    //    m_world.rotate(2,0,1,0);
+    //    m_camera.rotate(1,0,0,1);
     if(growing)
     {
         polygonVerts.replace(0,QVector2D(polygonVerts.at(0).x(),
@@ -221,17 +232,36 @@ void GLSandBox::changeColor()
         if(polygonVerts.at(0).y()<=0)
             growing=true;
     }
+    update();
+}
 
-    if(vertCount==3)
-    {
-        vertCount=4;
-        polygonVerts[0].setX(-0.25f);
-        polygonVerts[3].setY(polygonVerts[0].y());
-    }
-    else
-    {
-        vertCount=3;
-        polygonVerts[0].setX(0.0f);
-    }
+void GLSandBox::sineGenerator()
+{
+    xval += 0.05;
+    if(xval>=6.28)
+        xval=0;
+    // 1. Updating a single point:
+    //    polygonVerts[1].setY(sin(xval));
+
+    // 2. Updating a rolling point:
+    //vertPointer++;
+    //if(vertPointer>=vertCount)
+    //{
+    //    vertPointer=0;
+    //}
+    //polygonVerts[vertPointer].setY(sin(xval));
+
+    // 3. Adding a point on the right:
+    QVector2D newPoint = polygonVerts[vertCount-1];
+    newPoint.setY(sin(xval));
+    polygonVerts.removeFirst();
+    polygonVerts.append(newPoint);
+
+    // 4. Adding a point on the left:
+    //    QVector2D newPoint = polygonVerts[0];
+    //    newPoint.setY(sin(xval));
+    //    polygonVerts.removeLast();
+    //    polygonVerts.insert(0,newPoint);
+
     update();
 }
