@@ -15,6 +15,8 @@
 
 #include <QTimer>
 
+#define NO_VERTICES 50
+
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
 
@@ -41,7 +43,6 @@ public:
 
 public slots:
     void cleanup();
-    void changeColor();
     void sineGenerator();
 
 protected:
@@ -69,28 +70,14 @@ private:
     int colorLocation;
     int vColorLocation;
 
-    int m_blue;
-    QVector2D triangleRawCoords2D[3];
-    QVector4D colors[3];
-    QVector4D colorWhite[3];
     QList<QVector2D> polygonVerts;
-
-
-    GLfloat rawVerts[6];
-bool growing;
-bool inc_poly;
-GLfloat verts[10000];
-quint16 vertCount;
-quint16 vertPointer;
-    // = {
-//        0.0f,0.0f,0.0f,
-//        -0.25f,-0.25f,0.0f,
-//        0.25f,-0.25f,0.0f
-//    };
+    GLfloat verts[NO_VERTICES];
+    GLfloat cameraTranslate[NO_VERTICES];
+    quint16 vertCount;
+    quint16 vertPointer;
+    quint16 camPointer;
 
     QTimer *timer;
-
-
     double xval;
 
 };

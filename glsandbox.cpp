@@ -18,41 +18,34 @@ GLSandBox::GLSandBox(QWidget *parent)
     this->setFormat(sFormat);
 
     // Control variables:
-    m_blue = 200;
-    growing=true;
-    inc_poly=true;
     xval = 0;
-    vertCount = 1000;
+    vertCount = NO_VERTICES;
     vertPointer=0;
+    camPointer=0;
 
-    // Non-transformed geometry
-    triangleRawCoords2D[0]=(QVector2D(0.0f, 0.0f));
-    triangleRawCoords2D[1]=(QVector2D(-0.25f, -0.5f));
-    triangleRawCoords2D[2]=(QVector2D(0.25f, -0.5f));
+    double scale = 2/double(vertCount);
 
-    // Color array
-    colors[0]=QVector4D(1.0f,0,0,1.0f);
-    colors[1]=QVector4D(0,1.0f,0,1.0f);
-    colors[2]=QVector4D(0,0,1.0f,1.0f);
-    colors[3]=QVector4D(1.0,1.0,1.0f,1.0f);
-
-    // White color array
-    colorWhite[0]=QVector4D(1.0f,1,1,1.0f);
-    colorWhite[1]=QVector4D(0.5,0.5f,0.5f,1.0f);
-    colorWhite[2]=QVector4D(0,0,0.0f,1.0f);
-
-    rawVerts[0] = 0.0f;
-    rawVerts[1] = 0.0f;
-    rawVerts[2] = -0.25f;
-    rawVerts[3] = -0.25f;
-    rawVerts[4] = 0.25f;
-    rawVerts[5] = -0.25f;
-
-    double scale = 2/(double(vertCount)-1);
-    for(quint16 i=0; i<vertCount; i++)
+    for(quint8 i=0;i<vertCount/4;i++)
     {
-        polygonVerts.append(QVector2D((scale*i-1),0.0f));
+        cameraTranslate[i]=i*scale;
+        qDebug() << cameraTranslate[i];
     }
+
+    for(quint8 i=0; i< vertCount; i++)
+    {
+        verts[2*i]=i*scale-1;
+        verts[2*i+1]=0.0f;
+    }
+
+    //    qDebug() << cameraTranslate << verts;
+
+    //    cameraTranslate[0]=0.5f;
+
+    //    double scale = 2/(double(vertCount)-1);
+    //    for(quint16 i=0; i<vertCount; i++)
+    //    {
+    //        polygonVerts.append(QVector2D((scale*i-1),0.0f));
+    //    }
 
     timer = new QTimer;
     connect(timer,SIGNAL(timeout()),this,SLOT(sineGenerator()));
@@ -122,7 +115,7 @@ void GLSandBox::initializeGL()
     shaderProgram->bind();
     shaderProgram->link();
 
-    //    vertexLocation = shaderProgram->att;ributeLocation("coord2d");
+    //    vertexLocation = shaderProgram->attributeLocation("coord2d");
     vColorLocation = shaderProgram->attributeLocation("vColor");
 
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
@@ -131,6 +124,7 @@ void GLSandBox::initializeGL()
     m_camera.setToIdentity();
     m_camera.translate(0, 0, -2);
     m_world.setToIdentity();
+    //    m_world.translate(-1,0,0);
 
     vao = new QOpenGLVertexArrayObject(this);
     vao->create();
@@ -156,7 +150,7 @@ void GLSandBox::initializeGL()
 
     shaderProgram->release();
 
-    timer->start(25);
+    timer->start(50);
 }
 
 void GLSandBox::paintGL()
@@ -169,15 +163,15 @@ void GLSandBox::paintGL()
     vao->bind();
     vbo->bind();
 
-    quint16 vertSize = vertCount*2;
-    double scale = 2/(double(vertCount)-1);
-    for(quint16 i=0;i<vertCount;i++)
-    {
-        verts[i*2]=(scale*i-1);
-        verts[(i*2)+1]= polygonVerts.at(i).y();
-    }
+    //    quint16 vertSize = vertCount*2;
+    //    double scale = 2/(double(vertCount)-1);
+    //    for(quint16 i=0;i<vertCount;i++)
+    //    {
+    //        verts[i*2]=(scale*i-1);
+    //        verts[(i*2)+1]= polygonVerts.at(i).y();
+    //    }
 
-    vbo->allocate(verts,vertSize*sizeof(GLfloat));
+    vbo->allocate(verts,2*vertCount*sizeof(GLfloat));
     shaderProgram->enableAttributeArray("coord2d");
     shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
@@ -208,37 +202,16 @@ void GLSandBox::resizeGL(int w, int h)
 
     QMatrix4x4 tempmat;
     tempmat.setToIdentity();
-    tempmat.ortho(0,2,0,2,0.01f,200.0f);
+    tempmat.ortho(0,1,0,2,0.01f,200.0f);
     tempmat.translate(1,1,1);
-    //       qDebug() << "Ortho projection:" << tempmat;
+    qDebug() << "Ortho projection:" << tempmat;
     m_proj = tempmat;
-}
-
-void GLSandBox::changeColor()
-{
-    //    m_world.rotate(2,0,1,0);
-    //    m_camera.rotate(1,0,0,1);
-    if(growing)
-    {
-        polygonVerts.replace(0,QVector2D(polygonVerts.at(0).x(),
-                                         polygonVerts.at(0).y()+0.05f));
-        if(polygonVerts.at(0).y()>=0.9)
-            growing=false;
-    }
-    else
-    {
-        polygonVerts.replace(0,QVector2D(polygonVerts.at(0).x(),
-                                         polygonVerts.at(0).y()-0.05f));
-        if(polygonVerts.at(0).y()<=0)
-            growing=true;
-    }
-    update();
 }
 
 void GLSandBox::sineGenerator()
 {
     xval += 0.05;
-    if(xval>=6.28)
+    if(xval>=6.28318)
         xval=0;
     // 1. Updating a single point:
     //    polygonVerts[1].setY(sin(xval));
@@ -252,10 +225,42 @@ void GLSandBox::sineGenerator()
     //polygonVerts[vertPointer].setY(sin(xval));
 
     // 3. Adding a point on the right:
-    QVector2D newPoint = polygonVerts[vertCount-1];
-    newPoint.setY(sin(xval));
-    polygonVerts.removeFirst();
-    polygonVerts.append(newPoint);
+    //    QVector2D newPoint = polygonVerts[vertCount-1];
+    //    newPoint.setY(sin(xval));
+    //    polygonVerts.removeFirst();
+    //    polygonVerts.append(newPoint);
+
+    verts[2*vertPointer+1]=sin(xval);
+    vertPointer++;
+
+    if(vertPointer>=vertCount)
+    {
+        vertPointer=0;
+        camPointer=0;
+    }
+    else if(vertPointer>vertCount/2)
+    {
+        camPointer++;
+    }
+//    verts[2*vertPointer+1]=sin(xval);
+    m_camera.setToIdentity();
+    m_camera.translate(-cameraTranslate[camPointer],0,-3);
+
+    //    if(vertPointer>=vertCount)
+    //    {
+    //        vertPointer=0;
+    //        camPointer=0;
+    //        m_camera.setToIdentity();
+    //        m_camera.translate(0,0,-3);
+    //        m_camera.translate(-cameraTranslate[camPointer],0,0);
+    //    }
+
+    //    for(quint16 i=0;i<vertCount/2;i++)
+    //    {
+    //        qDebug() << verts[2*i];
+    //    }
+    //    qDebug() << "camera: " << m_camera;
+
 
     // 4. Adding a point on the left:
     //    QVector2D newPoint = polygonVerts[0];
