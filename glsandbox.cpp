@@ -13,29 +13,42 @@ GLSandBox::GLSandBox(QWidget *parent)
         setAttribute(Qt::WA_TranslucentBackground);
 
     // For anti-aliasing:
-    QSurfaceFormat sFormat;
-    sFormat.setSamples(8);
-    this->setFormat(sFormat);
+//    QSurfaceFormat sFormat;
+//    sFormat.setSamples(8);
+//    this->setFormat(sFormat);
 
     // Control variables:
     xval = 0;
     vertCount = NO_VERTICES;
     vertPointer=0;
     camPointer=0;
+    camX = 0;
+    growing = true;
 
-    double scale = 2/double(vertCount);
+    //    double scale = 2/double(vertCount);
 
-    for(quint8 i=0;i<vertCount/4;i++)
-    {
-        cameraTranslate[i]=i*scale;
-        qDebug() << cameraTranslate[i];
-    }
+    //    for(quint8 i=0;i<vertCount/4;i++)
+    //    {
+    //        cameraTranslate[i]=i*scale;
+    //        qDebug() << cameraTranslate[i];
+    //    }
 
-    for(quint8 i=0; i< vertCount; i++)
-    {
-        verts[2*i]=i*scale-1;
-        verts[2*i+1]=0.0f;
-    }
+    //    for(quint8 i=0; i< vertCount; i++)
+    //    {
+    //        verts[2*i]=i*scale-1;
+    //        verts[2*i+1]=0.0f;
+    //    }
+
+    verts[0] = 0.0f;
+    verts[1] = -1.0f;
+    verts[2] = 1.0f;
+    verts[3] = 0.0f;
+    verts[4] = 0.0f;
+    verts[5] = 1.0f;
+    verts[6] = -1.0f;
+    verts[7] = 0.0f;
+    verts[8] = 1.2f;
+    verts[9] = 0.0f;
 
     //    qDebug() << cameraTranslate << verts;
 
@@ -48,7 +61,8 @@ GLSandBox::GLSandBox(QWidget *parent)
     //    }
 
     timer = new QTimer;
-    connect(timer,SIGNAL(timeout()),this,SLOT(sineGenerator()));
+    //    connect(timer,SIGNAL(timeout()),this,SLOT(sineGenerator()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(moveCamera()));
 }
 
 GLSandBox::~GLSandBox()
@@ -71,6 +85,8 @@ void GLSandBox::cleanup()
     makeCurrent();
     vao->destroy();
     vbo->destroy();
+    delete vao;
+    delete vbo;
     delete shaderProgram;
     shaderProgram = 0;
     doneCurrent();
@@ -108,7 +124,7 @@ void GLSandBox::initializeGL()
     initializeOpenGLFunctions();
 
     // Blue background
-    glClearColor(0.0f, 0.0f, 0.25f, 1.0f );
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
     shaderProgram = new QOpenGLShaderProgram;
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex,vShaderSource);
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment,fShaderSource);
@@ -148,9 +164,19 @@ void GLSandBox::initializeGL()
     shaderProgram->enableAttributeArray("vColor");
     shaderProgram->setAttributeBuffer("vColor",GL_FLOAT,0,4);
 
+    vbo2->release();
+    vbo->release();
+    vao->release();
     shaderProgram->release();
 
-    timer->start(50);
+    QMatrix4x4 tempmat;
+        tempmat.setToIdentity();
+        tempmat.ortho(0,2,0,2,0.01f,200.0f);
+        tempmat.translate(1,1,1);
+//            qDebug() << "Ortho projection:" << tempmat;
+        m_proj = tempmat;
+
+    timer->start(10);
 }
 
 void GLSandBox::paintGL()
@@ -171,7 +197,7 @@ void GLSandBox::paintGL()
     //        verts[(i*2)+1]= polygonVerts.at(i).y();
     //    }
 
-    vbo->allocate(verts,2*vertCount*sizeof(GLfloat));
+//    vbo->allocate(verts,2*vertCount*sizeof(GLfloat));
     shaderProgram->enableAttributeArray("coord2d");
     shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
@@ -179,33 +205,59 @@ void GLSandBox::paintGL()
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
     glLineWidth(2.5f);
-    glPointSize(2.5f);
+    glPointSize(6.5f);
 
-    //            glDrawArrays(GL_POINTS,0,vertCount);
-    //    glDrawArrays(GL_LINE_LOOP, 0, 3);
+    glDrawArrays(GL_POINTS,0,vertCount);
+    //        glDrawArrays(GL_LINE_LOOP, 0, 4);
     //    glDrawArrays(GL_TRIANGLES,0,3);
     //        glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
     //    glDrawArrays(GL_TRIANGLE_STRIP,0,vertCount);
-    glDrawArrays(GL_LINE_STRIP,0,vertCount);
+    //    glDrawArrays(GL_LINE_STRIP,0,vertCount);
     //        glDrawArrays(GL_POINTS,vertCount-1,1);
+
 
     vbo->release();
     vao->release();
     shaderProgram->release();
 }
 
+
 void GLSandBox::resizeGL(int w, int h)
 {
-    m_proj.setToIdentity();
-    m_proj.perspective(30.0f, GLfloat(w) / h, 0.01f, 100.0f);
+//    m_proj.setToIdentity();
+//    m_proj.perspective(30.0f, GLfloat(w) / h, 0.01f, 100.0f);
     //        qDebug() << "Pers projection:" << m_proj;
 
     QMatrix4x4 tempmat;
     tempmat.setToIdentity();
-    tempmat.ortho(0,1,0,2,0.01f,200.0f);
+    tempmat.ortho(0,2,0,2,0.01f,200.0f);
     tempmat.translate(1,1,1);
-    qDebug() << "Ortho projection:" << tempmat;
+//        qDebug() << "Ortho projection:" << tempmat;
     m_proj = tempmat;
+}
+
+void GLSandBox::moveCamera()
+{
+    if(growing)
+    {
+        camX += 0.005f;
+        m_camera.translate(-0.005f,0,0);
+        if(camX>=0.5)
+        {
+            growing=false;
+        }
+    }
+    else
+    {
+        camX-=0.005f;
+        m_camera.translate(0.005f,0,0);
+        if(camX<=0)
+        {
+            growing=true;
+        }
+    }
+
+    update();
 }
 
 void GLSandBox::sineGenerator()
@@ -242,7 +294,7 @@ void GLSandBox::sineGenerator()
     {
         camPointer++;
     }
-//    verts[2*vertPointer+1]=sin(xval);
+    //    verts[2*vertPointer+1]=sin(xval);
     m_camera.setToIdentity();
     m_camera.translate(-cameraTranslate[camPointer],0,-3);
 

@@ -15,7 +15,7 @@
 
 #include <QTimer>
 
-#define NO_VERTICES 50
+#define NO_VERTICES 5
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
@@ -44,6 +44,7 @@ public:
 public slots:
     void cleanup();
     void sineGenerator();
+    void moveCamera();
 
 protected:
     void initializeGL() Q_DECL_OVERRIDE;
@@ -62,13 +63,14 @@ private:
     QMatrix4x4 m_world;
     bool m_transparent;
 
-
     int vertexLocation;
     int matrixLocation;
     int projMatrixLoc;
     int mvMatrixLoc;
     int colorLocation;
     int vColorLocation;
+
+    bool growing;
 
     QList<QVector2D> polygonVerts;
     GLfloat verts[NO_VERTICES];
@@ -79,6 +81,7 @@ private:
 
     QTimer *timer;
     double xval;
+    GLfloat camX;
 
 };
 #endif // GLSANDBOX_H
