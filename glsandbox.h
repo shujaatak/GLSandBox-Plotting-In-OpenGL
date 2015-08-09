@@ -16,6 +16,7 @@
 #include <QTimer>
 
 #define NO_VERTICES 5
+#define ANIMSPEED 20
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
@@ -80,7 +81,9 @@ private:
     quint16 camPointer;
 
     QTimer *timer;
+    double camStep;
     double xval;
+    double xvalStep;
     GLfloat camX;
 
 };

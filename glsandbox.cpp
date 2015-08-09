@@ -19,10 +19,12 @@ GLSandBox::GLSandBox(QWidget *parent)
 
     // Control variables:
     xval = 0;
+    xvalStep = 0.01;
     vertCount = NO_VERTICES;
     vertPointer=0;
     camPointer=0;
     camX = 0;
+    camStep = 0.01;
     growing = true;
 
     //    double scale = 2/double(vertCount);
@@ -39,15 +41,20 @@ GLSandBox::GLSandBox(QWidget *parent)
     //        verts[2*i+1]=0.0f;
     //    }
 
+    for(quint16 i=0; i<10;i++)
+    {
+//        verts[2*i]
+    }
+
     verts[0] = 0.0f;
-    verts[1] = -1.0f;
-    verts[2] = 1.0f;
+    verts[1] = -0.75f;
+    verts[2] = 0.75f;
     verts[3] = 0.0f;
     verts[4] = 0.0f;
-    verts[5] = 1.0f;
-    verts[6] = -1.0f;
+    verts[5] = 0.75f;
+    verts[6] = -0.75f;
     verts[7] = 0.0f;
-    verts[8] = 1.2f;
+    verts[8] = 0.9f;
     verts[9] = 0.0f;
 
     //    qDebug() << cameraTranslate << verts;
@@ -176,7 +183,7 @@ void GLSandBox::initializeGL()
 //            qDebug() << "Ortho projection:" << tempmat;
         m_proj = tempmat;
 
-    timer->start(10);
+    timer->start(ANIMSPEED);
 }
 
 void GLSandBox::paintGL()
@@ -215,7 +222,6 @@ void GLSandBox::paintGL()
     //    glDrawArrays(GL_LINE_STRIP,0,vertCount);
     //        glDrawArrays(GL_POINTS,vertCount-1,1);
 
-
     vbo->release();
     vao->release();
     shaderProgram->release();
@@ -228,29 +234,39 @@ void GLSandBox::resizeGL(int w, int h)
 //    m_proj.perspective(30.0f, GLfloat(w) / h, 0.01f, 100.0f);
     //        qDebug() << "Pers projection:" << m_proj;
 
-    QMatrix4x4 tempmat;
-    tempmat.setToIdentity();
-    tempmat.ortho(0,2,0,2,0.01f,200.0f);
-    tempmat.translate(1,1,1);
+//    QMatrix4x4 tempmat;
+//    tempmat.setToIdentity();
+//    tempmat.ortho(0,2,0,2,0.01f,200.0f);
+//    tempmat.translate(1,1,1);
 //        qDebug() << "Ortho projection:" << tempmat;
-    m_proj = tempmat;
+    m_proj.setToIdentity();
+    m_proj.ortho(0,2,0,2,0.01f,200.0f);
+    m_proj.translate(1,1,1);
 }
 
 void GLSandBox::moveCamera()
 {
+    // Generate new point
+    xval+= xvalStep;
+    if(xval>=6.2831)
+        xval=0;
+//    qDebug() << "xval: " << xval;
+
+    // Append new sine value to vertex array
+
     if(growing)
     {
-        camX += 0.005f;
-        m_camera.translate(-0.005f,0,0);
-        if(camX>=0.5)
+        camX += camStep;
+        m_camera.translate(-camStep,0,0);
+        if(camX>=2)
         {
             growing=false;
         }
     }
     else
     {
-        camX-=0.005f;
-        m_camera.translate(0.005f,0,0);
+        camX-=camStep;
+        m_camera.translate(camStep,0,0);
         if(camX<=0)
         {
             growing=true;
