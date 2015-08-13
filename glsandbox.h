@@ -15,8 +15,8 @@
 
 #include <QTimer>
 
-#define ACTIVE_VERTICES 4
-#define ANIMSPEED 1000
+#define ACTIVE_VERTICES 200
+#define ANIMSPEED 10
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
@@ -76,7 +76,7 @@ private:
     bool growing;
 
     QList<QVector2D> polygonVerts;
-    GLfloat verts[1000];
+    GLfloat verts[2000];
 //    GLfloat cameraTranslate[NO_VERTICES/2];
     quint16 vertCount;
     quint16 vertPointer;

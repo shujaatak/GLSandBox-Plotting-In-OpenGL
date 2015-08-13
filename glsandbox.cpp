@@ -13,13 +13,13 @@ GLSandBox::GLSandBox(QWidget *parent)
         setAttribute(Qt::WA_TranslucentBackground);
 
     // For anti-aliasing:
-    //    QSurfaceFormat sFormat;
-    //    sFormat.setSamples(8);
-    //    this->setFormat(sFormat);
+        QSurfaceFormat sFormat;
+        sFormat.setSamples(8);
+        this->setFormat(sFormat);
 
     // Control variables:
     xval = 0;
-    xvalStep = 0.01;
+    xvalStep = 0.15;
     vertCount = ACTIVE_VERTICES;
 
     vertPointer = 0;
@@ -175,15 +175,15 @@ void GLSandBox::paintGL()
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
-    glLineWidth(2.5f);
+    glLineWidth(3.5f);
     glPointSize(6.5f);
 
-    glDrawArrays(GL_POINTS,0,(ACTIVE_VERTICES*2));
+//    glDrawArrays(GL_POINTS,0,(ACTIVE_VERTICES*2));
     //        glDrawArrays(GL_LINE_LOOP, 0, 4);
     //    glDrawArrays(GL_TRIANGLES,0,3);
     //        glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
     //    glDrawArrays(GL_TRIANGLE_STRIP,0,vertCount);
-    //    glDrawArrays(GL_LINE_STRIP,0,vertCount);
+        glDrawArrays(GL_LINE_STRIP,0,(ACTIVE_VERTICES*2));
     //        glDrawArrays(GL_POINTS,vertCount-1,1);
 
     vbo->release();
@@ -239,10 +239,9 @@ void GLSandBox::moveCamera()
 {
     // Generate new point
     xval+= xvalStep;
-    if(xval>=1)
+    if(xval>=6.283185)
         xval=0;
-    //    double yval = sin(xval);
-    double yval = xval;
+        double yval = sin(xval);
 
     // Increase x position pointer
     vertPointer++;
@@ -250,7 +249,7 @@ void GLSandBox::moveCamera()
     {
         vertPointer=0;
     }
-    qDebug() << "vertPointer = " << vertPointer;
+//    qDebug() << "vertPointer = " << vertPointer;
 
     // Assign y value
     // 1. Assign it at the "front" of the queue: the current point on the right.
@@ -262,20 +261,12 @@ void GLSandBox::moveCamera()
         verts[2*(vertPointer-2)+1]=yval;
     }
 
-
-//    if(vertPointer<ACTIVE_VERTICES)
+//    QString output;
+//    for(quint16 i=0; i<ACTIVE_VERTICES*4;i+=2)
 //    {
-//        verts[(ACTIVE_VERTICES-1)+2*vertPointer+1]=yval;
+//        output.append(QString("Y%1: %2| ").arg(i/2).arg(verts[i+1],6));
 //    }
-
-
-    QString output;
-//    output.append("Vals: ");
-    for(quint16 i=0; i<ACTIVE_VERTICES*4;i+=2)
-    {
-        output.append(QString("Y%1: %2| ").arg(i/2).arg(verts[i+1],6));
-    }
-    qDebug() << output;
+//    qDebug() << output;
 
 
     // Move camera
@@ -284,14 +275,13 @@ void GLSandBox::moveCamera()
     m_camera.translate(-verts[2*vertPointer]-1,0,0);
     //    qDebug() << "camera moved " << -verts[2*vertPointer] << " units to the left";
 
-
     update();
 
 }
 
 void GLSandBox::sineGenerator()
 {
-    xval += 0.05;
+    xval += xvalStep;
     if(xval>=6.28318)
         xval=0;
     // 1. Updating a single point:
