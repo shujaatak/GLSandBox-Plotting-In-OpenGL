@@ -15,8 +15,8 @@
 
 #include <QTimer>
 
-#define NO_VERTICES 5
-#define ANIMSPEED 20
+#define ACTIVE_VERTICES 4
+#define ANIMSPEED 1000
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
@@ -53,6 +53,8 @@ protected:
     void resizeGL(int width, int height) Q_DECL_OVERRIDE;
 
 private:
+    void printVertices();
+    void prepareXPos(quint16);
     bool m_core;
     QOpenGLShaderProgram *shaderProgram;
     QOpenGLVertexArrayObject *vao;
@@ -74,8 +76,8 @@ private:
     bool growing;
 
     QList<QVector2D> polygonVerts;
-    GLfloat verts[NO_VERTICES];
-    GLfloat cameraTranslate[NO_VERTICES];
+    GLfloat verts[1000];
+//    GLfloat cameraTranslate[NO_VERTICES/2];
     quint16 vertCount;
     quint16 vertPointer;
     quint16 camPointer;
