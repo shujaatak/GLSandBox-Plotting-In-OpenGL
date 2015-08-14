@@ -12,21 +12,14 @@
 #include <QFile>
 #include <QList>
 #include <QOpenGLShaderProgram>
-
 #include <QTimer>
 
-#define ACTIVE_VERTICES 200
-#define ANIMSPEED 10
+#define ACTIVE_VERTICES 100
+#define ANIMSPEED 50
+#define SINESPEED 10
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
 static const char *fPath = "../GLSandBox/shader2d.frag";
-
-static const GLfloat colorVerts[] = {
-    1.0f,0.0f,0.0f,1.0f,
-    0.0f,1.0f,0.0f,1.0f,
-    0.0f,0.0f,1.0f,1.0f,
-    1.0f,1.0f,1.0f,1.0f
-};
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
@@ -44,7 +37,6 @@ public:
 
 public slots:
     void cleanup();
-    void sineGenerator();
     void moveCamera();
 
 protected:
@@ -53,40 +45,30 @@ protected:
     void resizeGL(int width, int height) Q_DECL_OVERRIDE;
 
 private:
-    void printVertices();
     void prepareXPos(quint16);
     bool m_core;
     QOpenGLShaderProgram *shaderProgram;
     QOpenGLVertexArrayObject *vao;
     QOpenGLBuffer *vbo;
-    QOpenGLBuffer *vbo2;
 
     QMatrix4x4 m_proj;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
     bool m_transparent;
 
-    int vertexLocation;
     int matrixLocation;
     int projMatrixLoc;
     int mvMatrixLoc;
-    int colorLocation;
     int vColorLocation;
 
-    bool growing;
-
-    QList<QVector2D> polygonVerts;
     GLfloat verts[2000];
-//    GLfloat cameraTranslate[NO_VERTICES/2];
     quint16 vertCount;
     quint16 vertPointer;
-    quint16 camPointer;
 
     QTimer *timer;
-    double camStep;
+    QTimer *drawTimer;
     double xval;
     double xvalStep;
-    GLfloat camX;
 
 };
 #endif // GLSANDBOX_H

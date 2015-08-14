@@ -13,27 +13,23 @@ GLSandBox::GLSandBox(QWidget *parent)
         setAttribute(Qt::WA_TranslucentBackground);
 
     // For anti-aliasing:
-        QSurfaceFormat sFormat;
-        sFormat.setSamples(8);
-        this->setFormat(sFormat);
+    QSurfaceFormat sFormat;
+    sFormat.setSamples(8);
+    this->setFormat(sFormat);
 
     // Control variables:
     xval = 0;
     xvalStep = 0.15;
     vertCount = ACTIVE_VERTICES;
 
+    prepareXPos(vertCount*2);
     vertPointer = 0;
-    camPointer=0;
-    camX = 0;
-    camStep = 1/double(vertCount/2-1);
-    growing = true;
 
-    prepareXPos(ACTIVE_VERTICES*2);
-
-    printVertices();
 
     timer = new QTimer;
     connect(timer,SIGNAL(timeout()),this,SLOT(moveCamera()));
+    drawTimer = new QTimer;
+    connect(timer,SIGNAL(timeout()),this,SLOT(update()));
 }
 
 GLSandBox::~GLSandBox()
@@ -102,7 +98,6 @@ void GLSandBox::initializeGL()
     shaderProgram->bind();
     shaderProgram->link();
 
-    //    vertexLocation = shaderProgram->attributeLocation("coord2d");
     vColorLocation = shaderProgram->attributeLocation("vColor");
 
     projMatrixLoc = shaderProgram->uniformLocation("projMatrix");
@@ -111,7 +106,6 @@ void GLSandBox::initializeGL()
     m_camera.setToIdentity();
     m_camera.translate(0, 0, -2);
     m_world.setToIdentity();
-    //    m_world.translate(-1,0,0);
 
     vao = new QOpenGLVertexArrayObject(this);
     vao->create();
@@ -121,33 +115,23 @@ void GLSandBox::initializeGL()
     vbo->create();
     vbo->setUsagePattern(QOpenGLBuffer::DynamicDraw);
     vbo->bind();
-    vbo->allocate(verts,(ACTIVE_VERTICES*2)*2*sizeof(GLfloat));
+    vbo->allocate(verts,(vertCount*2)*2*sizeof(GLfloat));
 
     shaderProgram->enableAttributeArray("coord2d");
     shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
-    vbo2 = new QOpenGLBuffer;
-    vbo2->create();
-    vbo2->setUsagePattern(QOpenGLBuffer::StaticDraw);
-    vbo2->bind();
-    vbo2->allocate(colorVerts,sizeof(colorVerts));
-
-    shaderProgram->enableAttributeArray("vColor");
-    shaderProgram->setAttributeBuffer("vColor",GL_FLOAT,0,4);
-
-    vbo2->release();
     vbo->release();
     vao->release();
     shaderProgram->release();
 
     QMatrix4x4 tempmat;
     tempmat.setToIdentity();
-    tempmat.ortho(0,1,0,2,0.01f,200.0f);
+    tempmat.ortho(1,2,0,2,0.01f,200.0f);
     tempmat.translate(1,1,1);
-    //            qDebug() << "Ortho projection:" << tempmat;
     m_proj = tempmat;
 
-    timer->start(ANIMSPEED);
+    timer->start(SINESPEED);
+    drawTimer->start(ANIMSPEED);
 }
 
 void GLSandBox::paintGL()
@@ -160,31 +144,15 @@ void GLSandBox::paintGL()
     vao->bind();
     vbo->bind();
 
-    //    quint16 vertSize = vertCount*2;
-    //    double scale = 2/(double(vertCount)-1);
-    //    for(quint16 i=0;i<vertCount;i++)
-    //    {
-    //        verts[i*2]=(scale*i-1);
-    //        verts[(i*2)+1]= polygonVerts.at(i).y();
-    //    }
-
-    vbo->allocate(verts,(ACTIVE_VERTICES*2)*2*sizeof(GLfloat));
+    vbo->allocate(verts,(vertCount*2)*2*sizeof(GLfloat));
     shaderProgram->enableAttributeArray("coord2d");
     shaderProgram->setAttributeBuffer("coord2d",GL_FLOAT,0,2);
 
     shaderProgram->setUniformValue(projMatrixLoc, m_proj);
     shaderProgram->setUniformValue(mvMatrixLoc, m_camera * m_world);
 
-    glLineWidth(3.5f);
-    glPointSize(6.5f);
-
-//    glDrawArrays(GL_POINTS,0,(ACTIVE_VERTICES*2));
-    //        glDrawArrays(GL_LINE_LOOP, 0, 4);
-    //    glDrawArrays(GL_TRIANGLES,0,3);
-    //        glDrawArrays(GL_TRIANGLE_FAN,0,vertCount);
-    //    glDrawArrays(GL_TRIANGLE_STRIP,0,vertCount);
-        glDrawArrays(GL_LINE_STRIP,0,(ACTIVE_VERTICES*2));
-    //        glDrawArrays(GL_POINTS,vertCount-1,1);
+    glLineWidth(2.0f);
+    glDrawArrays(GL_LINE_STRIP,0,(vertCount*2));
 
     vbo->release();
     vao->release();
@@ -193,26 +161,9 @@ void GLSandBox::paintGL()
 
 void GLSandBox::resizeGL(int w, int h)
 {
-    //    m_proj.setToIdentity();
-    //    m_proj.perspective(30.0f, GLfloat(w) / h, 0.01f, 100.0f);
-    //        qDebug() << "Pers projection:" << m_proj;
-
-    //    QMatrix4x4 tempmat;
-    //    tempmat.setToIdentity();
-    //    tempmat.ortho(0,2,0,2,0.01f,200.0f);
-    //    tempmat.translate(1,1,1);
-    //        qDebug() << "Ortho projection:" << tempmat;
     m_proj.setToIdentity();
-    m_proj.ortho(0,1,0,2,0.01f,200.0f);
+    m_proj.ortho(1,2,0,2,0.01f,200.0f);
     m_proj.translate(1,1,1);
-}
-
-void GLSandBox::printVertices()
-{
-    //    for(quint16 i=0;i<NO_VERTICES;i+=2)
-    //    {
-    //        qDebug() << verts[i+1];
-    //    }
 }
 
 void GLSandBox::prepareXPos(quint16 vertexCount)
@@ -225,14 +176,12 @@ void GLSandBox::prepareXPos(quint16 vertexCount)
 
     for(quint16 i=0;i<vertexCount*2;i+=2)
     {
-        verts[i] = stepSize*(i/2)-1;
-        //        verts[i+1] = (double(i)/2+1)/20;
+        verts[i] = stepSize*(i/2);
         verts[i+1] = 0.0f;
-        //verts[i+1] = 0.0f;
         result.append(QString("X: %1, Y: %2").arg(verts[i]).arg(verts[i+1]));
         result.append("\n");
     }
-    qDebug() << result;
+    //    qDebug() << result;
 }
 
 void GLSandBox::moveCamera()
@@ -241,103 +190,28 @@ void GLSandBox::moveCamera()
     xval+= xvalStep;
     if(xval>=6.283185)
         xval=0;
-        double yval = sin(xval);
+    double yval = sin(xval);
 
     // Increase x position pointer
     vertPointer++;
-    if(vertPointer>ACTIVE_VERTICES)
+    if(vertPointer>vertCount)
     {
         vertPointer=0;
     }
-//    qDebug() << "vertPointer = " << vertPointer;
+    //    qDebug() << "vertPointer = " << vertPointer;
 
     // Assign y value
     // 1. Assign it at the "front" of the queue: the current point on the right.
     // The queue can be organized as follows:
-    // || [0][1][2]...[ACTIVE_VERTICES-1]||[ACTIVE_VERTICES][ACTIVE_VERTICES+1]...[ACTIVE_VERTICES*2-1]
-    verts[2*(vertPointer+ACTIVE_VERTICES-1)+1] = yval;
+    // || [0][1][2]...[vertCount-1]||[vertCount][vertCount+1]...[vertCount*2-1]
+    verts[2*(vertPointer+vertCount-1)+1] = yval;
     if(vertPointer>1)
     {
         verts[2*(vertPointer-2)+1]=yval;
     }
 
-//    QString output;
-//    for(quint16 i=0; i<ACTIVE_VERTICES*4;i+=2)
-//    {
-//        output.append(QString("Y%1: %2| ").arg(i/2).arg(verts[i+1],6));
-//    }
-//    qDebug() << output;
-
-
     // Move camera
     m_camera.setToIdentity();
     m_camera.translate(0,0,-3);
-    m_camera.translate(-verts[2*vertPointer]-1,0,0);
-    //    qDebug() << "camera moved " << -verts[2*vertPointer] << " units to the left";
-
-    update();
-
-}
-
-void GLSandBox::sineGenerator()
-{
-    xval += xvalStep;
-    if(xval>=6.28318)
-        xval=0;
-    // 1. Updating a single point:
-    //    polygonVerts[1].setY(sin(xval));
-
-    // 2. Updating a rolling point:
-    //vertPointer++;
-    //if(vertPointer>=vertCount)
-    //{
-    //    vertPointer=0;
-    //}
-    //polygonVerts[vertPointer].setY(sin(xval));
-
-    // 3. Adding a point on the right:
-    //    QVector2D newPoint = polygonVerts[vertCount-1];
-    //    newPoint.setY(sin(xval));
-    //    polygonVerts.removeFirst();
-    //    polygonVerts.append(newPoint);
-
-    verts[2*vertPointer+1]=sin(xval);
-    vertPointer++;
-
-    if(vertPointer>=vertCount)
-    {
-        vertPointer=0;
-        camPointer=0;
-    }
-    else if(vertPointer>vertCount/2)
-    {
-        camPointer++;
-    }
-    //    verts[2*vertPointer+1]=sin(xval);
-    m_camera.setToIdentity();
-    //    m_camera.translate(-cameraTranslate[camPointer],0,-3);
-
-    //    if(vertPointer>=vertCount)
-    //    {
-    //        vertPointer=0;
-    //        camPointer=0;
-    //        m_camera.setToIdentity();
-    //        m_camera.translate(0,0,-3);
-    //        m_camera.translate(-cameraTranslate[camPointer],0,0);
-    //    }
-
-    //    for(quint16 i=0;i<vertCount/2;i++)
-    //    {
-    //        qDebug() << verts[2*i];
-    //    }
-    //    qDebug() << "camera: " << m_camera;
-
-
-    // 4. Adding a point on the left:
-    //    QVector2D newPoint = polygonVerts[0];
-    //    newPoint.setY(sin(xval));
-    //    polygonVerts.removeLast();
-    //    polygonVerts.insert(0,newPoint);
-
-    update();
+    m_camera.translate(-verts[2*vertPointer],0,0);
 }
