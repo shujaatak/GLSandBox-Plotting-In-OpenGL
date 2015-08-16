@@ -14,8 +14,8 @@
 #include <QOpenGLShaderProgram>
 #include <QTimer>
 
-#define ACTIVE_VERTICES 100
-#define ANIMSPEED 50
+#define ACTIVE_VERTICES 400
+#define ANIMSPEED 40
 #define SINESPEED 10
 
 static const char *vPath = "../GLSandBox/shader2d.vert";
@@ -50,6 +50,7 @@ private:
     QOpenGLShaderProgram *shaderProgram;
     QOpenGLVertexArrayObject *vao;
     QOpenGLBuffer *vbo;
+    QOpenGLBuffer *vbo2;
 
     QMatrix4x4 m_proj;
     QMatrix4x4 m_camera;
@@ -62,8 +63,12 @@ private:
     int vColorLocation;
 
     GLfloat verts[2000];
+    GLfloat verts2[2000];
     quint16 vertCount;
     quint16 vertPointer;
+
+    GLfloat color1[3];
+    GLfloat color2[3];
 
     QTimer *timer;
     QTimer *drawTimer;
